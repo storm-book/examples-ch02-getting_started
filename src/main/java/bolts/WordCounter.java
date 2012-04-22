@@ -2,18 +2,18 @@ package bolts;
 
 import java.util.HashMap;
 import java.util.Map;
-import backtype.storm.task.OutputCollector;
+
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichBolt;
+import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Tuple;
 
-public class WordCounter implements IRichBolt {
+public class WordCounter extends BaseBasicBolt {
 
 	Integer id;
 	String name;
 	Map<String, Integer> counters;
-	private OutputCollector collector;
 
 	/**
 	 * At the end of the spout (when the cluster is shutdown
@@ -28,10 +28,21 @@ public class WordCounter implements IRichBolt {
 	}
 
 	/**
-	 * On each word We will count
+	 * On create 
 	 */
 	@Override
-	public void execute(Tuple input) {
+	public void prepare(Map stormConf, TopologyContext context) {
+		this.counters = new HashMap<String, Integer>();
+		this.name = context.getThisComponentId();
+		this.id = context.getThisTaskId();
+	}
+
+	@Override
+	public void declareOutputFields(OutputFieldsDeclarer declarer) {}
+
+
+	@Override
+	public void execute(Tuple input, BasicOutputCollector collector) {
 		String str = input.getString(0);
 		/**
 		 * If the word dosn't exist in the map we will create
@@ -43,22 +54,5 @@ public class WordCounter implements IRichBolt {
 			Integer c = counters.get(str) + 1;
 			counters.put(str, c);
 		}
-		//Set the tuple as Acknowledge
-		collector.ack(input);
 	}
-
-	/**
-	 * On create 
-	 */
-	@Override
-	public void prepare(Map stormConf, TopologyContext context,
-			OutputCollector collector) {
-		this.counters = new HashMap<String, Integer>();
-		this.collector = collector;
-		this.name = context.getThisComponentId();
-		this.id = context.getThisTaskId();
-	}
-
-	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {}
 }
